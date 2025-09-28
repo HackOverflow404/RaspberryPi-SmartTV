@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Erised TV Launcher</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body,html{font-family:system-ui,-apple-system,sans-serif;background:#0a0a0f;color:#fff;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+header{padding:2rem;text-align:center;background:rgba(255,255,255,0.05);border-bottom:1px solid rgba(255,255,255,0.1)}
+h1{font-size:clamp(2rem,5vw,3.5rem);font-weight:700;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.5rem}
+header p{color:#b0b3c1;font-size:1.1rem;margin-bottom:1.5rem}
+.search{display:flex;gap:0.75rem;max-width:500px;margin:0 auto}
+.search input{flex:1;padding:0.875rem 1.25rem;border-radius:25px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:1rem;outline:none;transition:border-color 0.3s}
+.search input:focus{border-color:#667eea}
+.search input::placeholder{color:#b0b3c1}
+.search button{padding:0.875rem 1.5rem;border-radius:25px;border:none;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;font-size:1rem;font-weight:600;cursor:pointer;transition:transform 0.3s}
+.search button:hover{transform:translateY(-2px)}
+.container{flex:1;overflow:hidden}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1.5rem;padding:2rem;height:100%;overflow-y:auto;scrollbar-width:none}
+.grid::-webkit-scrollbar{display:none}
+.tile{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:20px;height:160px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:600;text-align:center;cursor:pointer;padding:1.5rem;position:relative;overflow:hidden;transition:transform 0.3s,border-color 0.3s}
+.tile::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);opacity:0;transition:opacity 0.3s;z-index:-1}
+.tile:hover::before{opacity:1}
+.tile:hover{transform:translateY(-8px) scale(1.02);border-color:rgba(255,255,255,0.3)}
+.tile-content{position:relative;z-index:2}
+.controls{display:none;position:absolute;top:12px;right:12px;gap:6px;z-index:3}
+.editing .controls{display:flex}
+.controls button{border:none;border-radius:50%;width:32px;height:32px;font-size:14px;cursor:pointer;color:white}
+.rename-btn{background:linear-gradient(135deg,#fa709a 0%,#fee140 100%)}
+.delete-btn{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%)}
+footer{background:rgba(255,255,255,0.05);border-top:1px solid rgba(255,255,255,0.1);padding:2rem;display:flex;justify-content:center;align-items:center;gap:1rem;flex-wrap:wrap}
+.input-group{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.input-group input{padding:0.75rem 1rem;border-radius:12px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:1rem;width:200px;outline:none;transition:border-color 0.3s;-webkit-appearance:none;appearance:none}
+.input-group input:focus{border-color:#667eea;background:rgba(255,255,255,0.08)}
+.input-group input::placeholder{color:#b0b3c1}
+.btn{padding:0.75rem 1.5rem;font-size:1rem;font-weight:600;border-radius:12px;border:none;cursor:pointer;min-width:120px;color:white;transition:transform 0.3s}
+.btn:hover{transform:translateY(-2px)}
+.btn-primary{background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%)}
+.btn-secondary{background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%)}
+.youtube::before{background:linear-gradient(135deg,#ff0000 0%,#ff4444 100%)}
+.netflix::before{background:linear-gradient(135deg,#e50914 0%,#b2070f 100%)}
+.prime::before{background:linear-gradient(135deg,#00a8e1 0%,#0073e6 100%)}
+.hulu::before{background:linear-gradient(135deg,#1ce783 0%,#0eb65c 100%)}
+.spotify::before{background:linear-gradient(135deg,#1db954 0%,#1ed760 100%)}
+@media(max-width:768px){
+.search{flex-direction:column;gap:0.5rem}
+.grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:1rem;padding:1.5rem}
+.tile{height:120px;font-size:0.95rem}
+.input-group input{width:160px}
+}
+</style>
+</head>
+<body>
+<header>
+<h1>Erised</h1>
+<p>Through the Looking Glass</p>
+<div class="search">
+<input type="text" id="s" placeholder="Search Google...">
+<button onclick="search()">Search</button>
+</div>
+</header>
+<div class="container">
+<div class="grid" id="g"></div>
+</div>
+<footer>
+<div class="input-group">
+<input type="text" id="n" placeholder="App Name">
+<input type="url" id="u" placeholder="https://example.com">
+<button class="btn btn-primary" onclick="add()">Add App</button>
+<button class="btn btn-secondary" id="e" onclick="edit()">Edit Mode</button>
+</div>
+</footer>
+<script>
+const apps=[
+{name:"YouTube",url:"https://youtube.com",id:"youtube"},
+{name:"Netflix",url:"https://netflix.com",id:"netflix"},
+{name:"Prime Video",url:"https://primevideo.com",id:"prime"},
+{name:"Hulu",url:"https://hulu.com",id:"hulu"},
+{name:"Spotify",url:"https://spotify.com",id:"spotify"}
+];
+let editMode=0,custom=[],g=document.getElementById('g');
+
+function load(){
+try{
+const s=localStorage.getItem('apps');
+if(s)custom=JSON.parse(s);
+}catch(e){}
+}
+
+function save(){
+try{
+localStorage.setItem('apps',JSON.stringify(custom));
+}catch(e){}
+}
+
+function render(){
+g.innerHTML='';
+[...apps,...custom].forEach((app,i)=>{
+const isCustom=i>=apps.length;
+const tile=document.createElement('div');
+tile.className='tile'+(app.id&&apps.find(a=>a.id===app.id)?' '+app.id:'');
+if(editMode&&isCustom)tile.className+=' editing';
+tile.innerHTML=`<div class="tile-content">${app.name}</div>`+(editMode&&isCustom?
+`<div class="controls">
+<button class="rename-btn" onclick="rename(${i-apps.length})">R</button>
+<button class="delete-btn" onclick="del(${i-apps.length})">X</button>
+</div>`:'');
+tile.onclick=()=>!editMode&&(location.href=app.url);
+g.appendChild(tile);
+});
+}
+
+function add(){
+const name=document.getElementById('n').value.trim();
+const url=document.getElementById('u').value.trim();
+if(!name||!url)return alert('Please provide both name and URL');
+try{new URL(url)}catch{return alert('Please enter a valid URL')}
+custom.push({name,url,id:'custom-'+Date.now()});
+save();
+document.getElementById('n').value='';
+document.getElementById('u').value='';
+render();
+}
+
+function edit(){
+editMode=!editMode;
+const btn=document.getElementById('e');
+btn.textContent=editMode?'Done':'Edit Mode';
+btn.className='btn '+(editMode?'btn-primary':'btn-secondary');
+render();
+}
+
+function rename(i){
+const newName=prompt('Enter new name:',custom[i].name);
+if(newName&&newName.trim()){
+custom[i].name=newName.trim();
+save();
+render();
+}
+}
+
+function del(i){
+custom.splice(i,1);
+save();
+render();
+}
+
+function search(){
+const q=document.getElementById('s').value.trim();
+if(q)location.href='https://www.google.com/search?q='+encodeURIComponent(q);
+}
+
+document.getElementById('s').addEventListener('keydown', (e) => {
+if (e.key === 'Enter') search();
+});
+
+document.addEventListener('keydown', (e) => {
+const ae = document.activeElement;
+const inAField =
+ae &&
+(ae.tagName === 'INPUT' ||
+ae.tagName === 'TEXTAREA' ||
+ae.isContentEditable);
+
+if (inAField) return;
+
+if (e.key === 'Escape' && editMode) {
+e.preventDefault();
+edit();
+}
+});
+
+load();
+render();
+</script>
+</body>
+</html>

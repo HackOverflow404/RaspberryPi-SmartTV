@@ -1,0 +1,3 @@
+# Raspberry Pi disk images are too big for git (kept in ../TV_Dashboard-image)
+*.img
+*.img.gz
